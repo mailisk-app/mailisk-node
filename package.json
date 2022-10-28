@@ -1,0 +1,27 @@
+{
+  "name": "mailisk",
+  "version": "1.0.0",
+  "description": "Mailisk library for NodeJS",
+  "keywords": [
+    "mailisk",
+    "email-automation",
+    "email-testing",
+    "email"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/nodemailer": "^6.4.6",
+    "tsup": "^6.2.3",
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "axios": "^1.1.2",
+    "nodemailer": "^6.8.0"
+  }
+}

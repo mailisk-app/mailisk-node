@@ -101,7 +101,7 @@ export class MailiskClient {
     let _params = { ...params };
 
     // default from timestamp, 5 seconds before starting this request
-    if (!params?.from_timestamp) {
+    if (params?.from_timestamp === undefined || params?.from_timestamp === null) {
       _params.from_timestamp = Math.floor(new Date().getTime() / 1000) - 5;
     }
 

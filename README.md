@@ -58,8 +58,18 @@ This library wraps the REST API endpoints. Find out more in the [API Reference](
 
 The `searchInbox` function takes a namespace and call parameters.
 
-- It uses the `wait` property by default. This means the call won't timeout until a result is returned or 5 minutes pass. This is adjustable by passing the `timeout` paramter (it can also be disabled by passing `wait: false`).
-- It uses a default `from_timestamp` of **current timestamp - 5 seconds**. This means that older emails will be ignored. This can be overriden by passing the `from_timestamp` parameter (`from_timestmap: 0` will disable filtering by email age).
+- By default it uses the `wait` flag. This means the call won't return until at least one email is received. Disabling this flag via `wait: false` can cause it to return an empty response immediately.
+- The request timeout is adjustable by passing `timeout` in the request options. By default it uses a timeout of 5 minutes.
+- By default `from_timestamp` is set to **current timestamp - 5 seconds**. This ensures that only new emails are returned. Without this, older emails would also be returned, potentially disrupting you if you were waiting for a specific email. This can be overriden by passing the `from_timestamp` parameter (`from_timestmap: 0` will disable filtering by email age).
+
+```js
+// timeout of 5 minutes
+await mailisk.searchInbox(namespace);
+// timeout of 1 minute
+await mailisk.searchInbox(namespace, {}, { timeout: 1000 * 60 });
+// returns immediately, even if the result would be empty
+await mailisk.searchInbox(namespace, { wait: false });
+```
 
 #### Filter by destination address
 

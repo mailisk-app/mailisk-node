@@ -100,9 +100,9 @@ export class MailiskClient {
   ): Promise<SearchInboxResponse> {
     let _params = { ...params };
 
-    // default from timestamp, 5 seconds before starting this request
+    // default from timestamp, 15 minutes before starting this request
     if (params?.from_timestamp === undefined || params?.from_timestamp === null) {
-      _params.from_timestamp = Math.floor(new Date().getTime() / 1000) - 5;
+      _params.from_timestamp = Math.floor(new Date().getTime() / 1000) - 15 * 60;
     }
 
     // by default wait for email

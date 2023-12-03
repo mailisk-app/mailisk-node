@@ -52,9 +52,21 @@ export interface SearchInboxParams {
   /**
    * Filter emails by 'to' address. Address must start with this.
    *
-   * 'foo' would return 'foobar@namespace.mailisk.net' but not 'barfoo@namespace.mailisk.net'
+   * 'foo' would return for 'foobar@namespace.mailisk.net' but not 'barfoo@namespace.mailisk.net'
    */
   to_addr_prefix?: string;
+  /**
+   * Filter emails by 'from' address. Address must include this.
+   *
+   * '@foo' would return for 'a@foo.com', 'b@foo.net'
+   */
+  from_addr_includes?: string;
+  /**
+   * Filter emails by subject. This is case insensitive. Subject must include this.
+   *
+   * 'password' would return for 'Password reset', 'Reset password notification' but not 'Reset'
+   */
+  subject_includes?: string;
   /**
    * Will keep the request going till at least one email would be returned.
    *

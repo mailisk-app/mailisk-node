@@ -1,6 +1,6 @@
 {
   "name": "mailisk",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Mailisk library for NodeJS",
   "keywords": [
     "mailisk",

@@ -112,6 +112,10 @@ export class MailiskClient {
 
     let _config = { ...config };
 
+    if (!config?.maxRedirects) {
+      _config.maxRedirects = 99999;
+    }
+
     // by default, wait 5 minutes for emails before timing out
     if (_params.wait && !config?.timeout) {
       _config.timeout = 1000 * 60 * 5;
@@ -119,7 +123,7 @@ export class MailiskClient {
 
     return (
       await this.axiosInstance.get(`api/emails/${namespace}/inbox`, {
-        ...config,
+        ..._config,
         params: _params,
       })
     ).data;

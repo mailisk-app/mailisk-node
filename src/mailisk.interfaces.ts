@@ -30,6 +30,8 @@ export interface Email {
   expires_timestamp: number;
   /** The spam score as reported by SpamAssassin */
   spam_score?: number;
+  /** The headers of the email */
+  headers?: Record<string, string>;
 }
 
 export interface SearchInboxParams {
@@ -123,4 +125,6 @@ export interface SendVirtualEmailParams {
   text?: string | undefined;
   /** The HTML version of the message */
   html?: string | undefined;
+  /** Custom headers for the email */
+  headers?: Record<string, string>;
 }

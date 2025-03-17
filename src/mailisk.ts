@@ -58,7 +58,7 @@ export class MailiskClient {
       },
     });
 
-    const { from, to, subject, text, html } = params;
+    const { from, to, subject, text, html, headers } = params;
 
     await transport.sendMail({
       from,
@@ -66,6 +66,7 @@ export class MailiskClient {
       subject,
       text,
       html,
+      headers,
     });
 
     transport.close();

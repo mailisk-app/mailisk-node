@@ -35,7 +35,7 @@ const { MailiskClient } = require("mailisk");
 const mailisk = new MailiskClient({ apiKey: "YOUR_API_KEY" });
 
 // send email (using virtual SMTP)
-await client.sendVirtualEmail(namespace, {
+await mailisk.sendVirtualEmail(namespace, {
   from: "test@example.com",
   to: `john@${namespace}.mailisk.net`,
   subject: "Testing",
@@ -43,7 +43,7 @@ await client.sendVirtualEmail(namespace, {
 });
 
 // receive email
-const result = await client.searchInbox(namespace);
+const result = await mailisk.searchInbox(namespace);
 
 console.log(result);
 ```
@@ -54,34 +54,41 @@ This library wraps the REST API endpoints. Find out more in the [API Reference](
 
 ## Client functions
 
-### searchInbox(namespace, params?)
+### `searchInbox(namespace, params?)`
 
-The `searchInbox` function takes a namespace and call parameters.
+Use `searchInbox` to fetch messages that arrived in a given namespace, optionally waiting until the first new mail shows up.
 
-- By default it uses the `wait` flag. This means the call won't return until at least one email is received. Disabling this flag via `wait: false` can cause it to return an empty response immediately.
-- The request timeout is adjustable by passing `timeout` in the request options. By default it uses a timeout of 5 minutes.
-- By default `from_timestamp` is set to **current timestamp - 5 seconds**. This ensures that only new emails are returned. Without this, older emails would also be returned, potentially disrupting you if you were waiting for a specific email. This can be overriden by passing the `from_timestamp` parameter (`from_timestmap: 0` will disable filtering by email age).
+For the full parameter options see the [endpoint reference](https://docs.mailisk.com/api-reference/search-inbox.html#request-1).
+
+Default behaviour:
+
+- Waits until at least one new email arrives (override with `wait: false`).
+- Times out after 5 minutes if nothing shows up (adjust via `requestOptions.timeout`).
+- Ignores messages older than 15 minutes to avoid picking up leftovers from previous tests (change via `from_timestamp`).
+
+#### Quick examples
 
 ```js
-// timeout of 5 minutes
-await mailisk.searchInbox(namespace);
-// timeout of 1 minute
+// wait up to the default 5 min for *any* new mail
+const { data: emails } = await mailisk.searchInbox(namespace);
+
+// custom 60-second timeout
 await mailisk.searchInbox(namespace, {}, { timeout: 1000 * 60 });
-// returns immediately, even if the result would be empty
+
+// polling pattern — return immediately, even if inbox is empty
 await mailisk.searchInbox(namespace, { wait: false });
 ```
 
 #### Filter by destination address
 
-A common use case is filtering the returned emails by the destination address, this is done using the `to_addr_prefix` parameter.
+A common pattern is to wait for the email your UI just triggered (e.g. password-reset).
+Pass `to_addr_prefix` so you don’t pick up stale messages:
 
 ```js
 const { data: emails } = await mailisk.searchInbox(namespace, {
-  to_addr_prefix: "john@mynamespace.mailisk.net",
+  to_addr_prefix: `john@${namespace}.mailisk.net`,
 });
 ```
-
-For more parameter options see the [endpoint reference](https://docs.mailisk.com/api-reference/search-inbox.html#request-1).
 
 ### sendVirtualEmail(namespace, params)
 
@@ -100,7 +107,7 @@ await mailisk.sendVirtualEmail(namespace, {
 
 This does not call an API endpoint but rather uses nodemailer to send an email using SMTP.
 
-### listNamespaces()
+### `listNamespaces()`
 
 List all namespaces associated with the current API Key.
 
@@ -109,4 +116,45 @@ const namespacesResponse = await mailisk.listNamespaces();
 
 // will be ['namespace1', 'namespace2']
 const namespaces = namespacesResponse.map((nr) => nr.namespace);
+```
+
+### `getAttachment(attachmentId)`
+
+Get information about an attachment.
+
+```ts
+const attachment = await mailisk.getAttachment(attachmentId);
+```
+
+### `downloadAttachment(attachmentId)`
+
+Retrieve the raw bytes of a file attached to an email message.  
+Typically you call this after `searchInbox` → iterate over `email.attachments[]` → pass the desired `attachment.id`.
+
+#### Quick examples
+
+```js
+import fs from "node:fs";
+import path from "node:path";
+
+// assume 'email' was fetched via searchInbox()
+const { id, filename } = email.attachments[0];
+
+// download the attachment
+const buffer = await mailisk.downloadAttachment(id);
+
+// save to disk (preserve original filename)
+fs.writeFileSync(filename, buffer);
+```
+
+Streaming large files
+
+downloadAttachment returns the entire file as a single Buffer.
+If you expect very large attachments and want to avoid holding them fully in memory, use getAttachment(attachmentId).download_url and stream with fetch / axios instead:
+
+```js
+const meta = await mailisk.getAttachment(id);
+const res = await fetch(meta.download_url);
+const fileStream = fs.createWriteStream(filename);
+await new Promise((ok, err) => res.body.pipe(fileStream).on("finish", ok).on("error", err));
 ```

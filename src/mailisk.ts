@@ -1,5 +1,6 @@
-import axios, { AxiosRequestConfig } from "axios";
+import axios, { AxiosBasicCredentials, AxiosRequestConfig } from "axios";
 import {
+  GetAttachmentResponse,
   ListNamespacesResponse,
   SearchInboxParams,
   SearchInboxResponse,
@@ -9,12 +10,13 @@ import {
 import nodemailer from "nodemailer";
 
 export class MailiskClient {
-  constructor({ apiKey, baseUrl }: { apiKey: string; baseUrl?: string }) {
+  constructor({ apiKey, baseUrl, auth }: { apiKey: string; baseUrl?: string; auth?: AxiosBasicCredentials }) {
     this.axiosInstance = axios.create({
       headers: {
         "X-Api-Key": apiKey,
       },
       baseURL: baseUrl || "https://api.mailisk.com/",
+      auth,
     });
   }
 
@@ -46,8 +48,6 @@ export class MailiskClient {
   async sendVirtualEmail(namespace: string, params: SendVirtualEmailParams): Promise<void> {
     const smtpSettings = await this.getSmtpSettings(namespace);
 
-    // TODO: to should match namespace
-
     const transport = nodemailer.createTransport({
       host: smtpSettings.data.host,
       port: smtpSettings.data.port,
@@ -58,7 +58,7 @@ export class MailiskClient {
       },
     });
 
-    const { from, to, subject, text, html } = params;
+    const { from, to, subject, text, html, headers, attachments } = params;
 
     await transport.sendMail({
       from,
@@ -66,6 +66,8 @@ export class MailiskClient {
       subject,
       text,
       html,
+      headers,
+      attachments,
     });
 
     transport.close();
@@ -135,5 +137,30 @@ export class MailiskClient {
   async getSmtpSettings(namespace: string): Promise<SmtpSettings> {
     const result = await this.axiosInstance.get(`api/smtp/${namespace}`);
     return result.data;
+  }
+
+  async getAttachment(attachmentId: string): Promise<GetAttachmentResponse> {
+    const result = await this.axiosInstance.get(`api/attachments/${attachmentId}`);
+    return result.data;
+  }
+
+  /**
+   * Download an attachment from an attachment ID.
+   *
+   * @example
+   * Download an attachment from an email
+   * ```typescript
+   * const attachment = email.attachments[0];
+   * const attachmentBuffer = await client.downloadAttachment(attachment.id);
+   *
+   * // save to file
+   * fs.writeFileSync(attachment.filename, attachmentBuffer);
+   * ```
+   */
+  async downloadAttachment(attachmentId: string): Promise<Buffer> {
+    const result = await this.getAttachment(attachmentId);
+
+    const response = await axios.get(result.data.download_url, { responseType: "arraybuffer" });
+    return Buffer.from(response.data);
   }
 }

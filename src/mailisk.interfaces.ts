@@ -1,8 +1,21 @@
+import { Attachment } from "nodemailer/lib/mailer";
+
 export interface EmailAddress {
   /** Email address */
   address: string;
   /** Display name, if one is specified */
   name?: string;
+}
+
+export interface EmailAttachment {
+  /** Unique identifier for the attachment */
+  id: string;
+  /** Filename of the attachment */
+  filename: string;
+  /** Content type of the attachment */
+  content_type: string;
+  /** Size in bytes of the attachment */
+  size: number;
 }
 
 export interface Email {
@@ -30,6 +43,10 @@ export interface Email {
   expires_timestamp: number;
   /** The spam score as reported by SpamAssassin */
   spam_score?: number;
+  /** The headers of the email */
+  headers?: Record<string, string>;
+  /** The attachments of the email */
+  attachments?: EmailAttachment[];
 }
 
 export interface SearchInboxParams {
@@ -99,6 +116,17 @@ export interface SmtpSettings {
   };
 }
 
+export interface GetAttachmentResponse {
+  data: {
+    id: string;
+    filename: string;
+    content_type: string;
+    size: number;
+    expires_at: string | null;
+    download_url: string;
+  };
+}
+
 export interface ListNamespacesResponse {
   data: [
     {
@@ -123,4 +151,8 @@ export interface SendVirtualEmailParams {
   text?: string | undefined;
   /** The HTML version of the message */
   html?: string | undefined;
+  /** Custom headers for the email */
+  headers?: Record<string, string>;
+  /** Attachments to the email */
+  attachments?: Attachment[];
 }

@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig } from "axios";
+import axios, { AxiosBasicCredentials, AxiosRequestConfig } from "axios";
 import {
   GetAttachmentResponse,
   ListNamespacesResponse,
@@ -10,12 +10,13 @@ import {
 import nodemailer from "nodemailer";
 
 export class MailiskClient {
-  constructor({ apiKey, baseUrl }: { apiKey: string; baseUrl?: string }) {
+  constructor({ apiKey, baseUrl, auth }: { apiKey: string; baseUrl?: string; auth?: AxiosBasicCredentials }) {
     this.axiosInstance = axios.create({
       headers: {
         "X-Api-Key": apiKey,
       },
       baseURL: baseUrl || "https://api.mailisk.com/",
+      auth,
     });
   }
 

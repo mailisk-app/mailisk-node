@@ -1,10 +1,11 @@
 # Mailisk Node Client
 
-Mailisk is an end-to-end email testing platform. It allows you to receive emails with code and automate email tests.
+Mailisk is an end-to-end email and SMS testing platform. It allows you to receive emails and SMS messages with code to automate tests.
 
 - Get a unique subdomain and unlimited email addresses for free.
 - Easily automate E2E password reset and account verification by catching emails.
-- Virtual SMTP support to test outbound email without 3rd party clients.
+- Receive SMS messages and automate SMS tests.
+- Virtual SMTP and SMS support to test without 3rd party clients.
 
 ## Get started
 
@@ -52,9 +53,9 @@ console.log(result);
 
 This library wraps the REST API endpoints. Find out more in the [API Reference](https://docs.mailisk.com/api-reference/).
 
-## Client functions
+## Client functions (Email)
 
-### `searchInbox(namespace, params?)`
+### `searchInbox(namespace, params?, requestOptions?)`
 
 Use `searchInbox` to fetch messages that arrived in a given namespace, optionally waiting until the first new mail shows up.
 
@@ -70,13 +71,13 @@ Default behaviour:
 
 ```js
 // wait up to the default 5 min for *any* new mail
-const { data: emails } = await mailisk.searchInbox(namespace);
-
+await mailisk.searchInbox(namespace);
 // custom 60-second timeout
 await mailisk.searchInbox(namespace, {}, { timeout: 1000 * 60 });
-
 // polling pattern — return immediately, even if inbox is empty
 await mailisk.searchInbox(namespace, { wait: false });
+// returns the last 20 emails in the namespace immediately
+await mailisk.searchInbox(namespace, { wait: false, from_timestamp: 0, limit: 20 });
 ```
 
 #### Filter by destination address
@@ -105,17 +106,15 @@ await mailisk.sendVirtualEmail(namespace, {
 });
 ```
 
-This does not call an API endpoint but rather uses nodemailer to send an email using SMTP.
-
 ### `listNamespaces()`
 
 List all namespaces associated with the current API Key.
 
 ```js
-const namespacesResponse = await mailisk.listNamespaces();
+const { data: namespaces } = await mailisk.listNamespaces();
 
 // will be ['namespace1', 'namespace2']
-const namespaces = namespacesResponse.map((nr) => nr.namespace);
+const namespacesList = namespaces.map((nr) => nr.namespace);
 ```
 
 ### `getAttachment(attachmentId)`
@@ -157,4 +156,57 @@ const meta = await mailisk.getAttachment(id);
 const res = await fetch(meta.download_url);
 const fileStream = fs.createWriteStream(filename);
 await new Promise((ok, err) => res.body.pipe(fileStream).on("finish", ok).on("error", err));
+```
+
+## Client functions (SMS)
+
+### `searchSmsMessages(phoneNumber, params?, requestOptions?)`
+
+Fetch recent SMS messages that were delivered to one of your Mailisk phone numbers.  
+For the full parameter list see the [Search SMS reference](https://docs.mailisk.com/api-reference/search-sms-messages.html#request).
+
+Default behaviour:
+
+- Waits until at least one SMS matches the filters (override with `wait: false`).
+- Times out after 5 minutes if nothing shows up (adjust via `requestOptions.timeout`).
+- Ignores messages older than 15 minutes (change via `from_date`).
+
+#### Quick examples
+
+```js
+// get or wait for SMS messages sent to ths number
+const { data: sms } = await mailisk.searchSmsMessages(phoneNumber);
+
+// look for a verification code coming from a known sender
+await mailisk.searchSmsMessages(phoneNumber, {
+  from_number: "+1800555",
+  body: "Your code",
+});
+
+// polling pattern — return immediately even if nothing matched
+await mailisk.searchSmsMessages(
+  phoneNumber,
+  { wait: false, limit: 10, from_date: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
+  { timeout: 10_000 }
+);
+```
+
+### `listSmsNumbers()`
+
+List all SMS phone numbers associated with the current account.
+
+```js
+const { data: phoneNumbers } = await mailisk.listSmsNumbers();
+```
+
+### `sendVirtualSms(params)`
+
+Send a virtual SMS message to a phone number you have access to.
+
+```js
+await mailisk.sendVirtualSms({
+  from_number: "15551234567",
+  to_number: "15557654321",
+  body: "Test message",
+});
 ```

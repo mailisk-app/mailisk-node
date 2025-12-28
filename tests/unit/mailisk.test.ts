@@ -9,6 +9,8 @@ import {
   mockEmailsResponse,
   mockSmtpSettingsResponse,
   mockAttachmentResponse,
+  mockSmsMessagesResponse,
+  mockSmsNumbersResponse,
 } from "../mocks/axios-mocks";
 
 const setupMockAxios = () => {
@@ -132,7 +134,7 @@ describe("MailiskClient", () => {
   describe("downloadAttachment", () => {
     it("should download and return attachment data", async () => {
       const getAttachmentSpy = jest.spyOn(MailiskClient.prototype, "getAttachment");
-      getAttachmentSpy.mockResolvedValueOnce({ data: mockAttachmentResponse });
+      getAttachmentSpy.mockResolvedValueOnce(mockAttachmentResponse);
 
       const mockBuffer = Buffer.from("test content");
       (axios.get as jest.Mock).mockResolvedValueOnce({ data: mockBuffer });
@@ -140,8 +142,142 @@ describe("MailiskClient", () => {
       const client = new MailiskClient({ apiKey: "test-key" });
       const result = await client.downloadAttachment("attachment-123");
 
-      expect(axios.get).toHaveBeenCalledWith(mockAttachmentResponse.download_url, { responseType: "arraybuffer" });
+      expect(axios.get).toHaveBeenCalledWith(mockAttachmentResponse.data.download_url, { responseType: "arraybuffer" });
       expect(result).toEqual(mockBuffer);
+    });
+  });
+
+  describe("searchSmsMessages", () => {
+    it("should fetch and return SMS messages with default parameters", async () => {
+      const { mockGet } = setupMockAxios();
+      mockGet.mockResolvedValueOnce({ data: mockSmsMessagesResponse });
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.searchSmsMessages("1234567890");
+
+      expect(mockGet).toHaveBeenCalledWith("api/sms/1234567890/messages", {
+        maxRedirects: 99999,
+        timeout: 1000 * 60 * 5,
+        params: {
+          from_date: expect.any(String),
+          wait: true,
+        },
+      });
+
+      expect(result).toEqual(mockSmsMessagesResponse);
+    });
+
+    it("should use custom parameters if provided", async () => {
+      const { mockGet } = setupMockAxios();
+      mockGet.mockResolvedValueOnce({ data: mockSmsMessagesResponse });
+
+      const customParams = {
+        limit: 5,
+        offset: 2,
+        body: "verification",
+        from_number: "+18005550123",
+        from_date: "2023-01-01T00:00:00.000Z",
+        to_date: "2023-02-01T00:00:00.000Z",
+        wait: false,
+      };
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.searchSmsMessages("+1234567890", customParams);
+
+      const expectedParams = { ...customParams };
+
+      expect(mockGet).toHaveBeenCalledWith("api/sms/+1234567890/messages", {
+        maxRedirects: 99999,
+        params: expectedParams,
+      });
+
+      expect(result).toEqual(mockSmsMessagesResponse);
+    });
+
+    it("should use custom axios config if provided", async () => {
+      const { mockGet } = setupMockAxios();
+      mockGet.mockResolvedValueOnce({ data: mockSmsMessagesResponse });
+
+      const customConfig = {
+        timeout: 10000,
+        maxRedirects: 5,
+      };
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.searchSmsMessages("+1234567890", undefined, customConfig);
+
+      expect(mockGet).toHaveBeenCalledWith("api/sms/+1234567890/messages", {
+        ...customConfig,
+        params: {
+          from_date: expect.any(String),
+          wait: true,
+        },
+      });
+
+      expect(result).toEqual(mockSmsMessagesResponse);
+    });
+
+    it("should handle errors correctly", async () => {
+      const { mockGet } = setupMockAxios();
+      const error = new Error("Search SMS Error");
+      mockGet.mockRejectedValueOnce(error);
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+
+      await expect(client.searchSmsMessages("+1234567890")).rejects.toThrow("Search SMS Error");
+    });
+  });
+
+  describe("listSmsNumbers", () => {
+    it("should fetch and return SMS numbers", async () => {
+      const { mockGet } = setupMockAxios();
+      mockGet.mockResolvedValueOnce({ data: mockSmsNumbersResponse });
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.listSmsNumbers();
+
+      expect(mockGet).toHaveBeenCalledWith("api/sms/numbers");
+      expect(result).toEqual(mockSmsNumbersResponse);
+    });
+
+    it("should handle errors correctly", async () => {
+      const { mockGet } = setupMockAxios();
+      const error = new Error("List SMS Numbers Error");
+      mockGet.mockRejectedValueOnce(error);
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+
+      await expect(client.listSmsNumbers()).rejects.toThrow("List SMS Numbers Error");
+    });
+  });
+
+  describe("sendVirtualSms", () => {
+    it("should send an SMS through the API", async () => {
+      const { mockPost } = setupMockAxios();
+      mockPost.mockResolvedValueOnce({ data: {} });
+
+      const smsParams = {
+        from_number: "15551234567",
+        to_number: "15557654321",
+        body: "Test message",
+      };
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      await client.sendVirtualSms(smsParams);
+
+      expect(mockPost).toHaveBeenCalledWith("api/sms/virtual", smsParams);
+    });
+
+    it("should handle errors when sending SMS", async () => {
+      const { mockPost } = setupMockAxios();
+      const error = new Error("Send SMS Error");
+      mockPost.mockRejectedValueOnce(error);
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+
+      await expect(
+        client.sendVirtualSms({ from_number: "+15551234567", to_number: "+15557654321", body: "Test message" })
+      ).rejects.toThrow("Send SMS Error");
     });
   });
 

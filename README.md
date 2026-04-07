@@ -11,6 +11,10 @@ Mailisk is an end-to-end email and SMS testing platform. It allows you to receiv
 
 For a more step-by-step walkthrough see the [NodeJS Guide](https://docs.mailisk.com/guides/nodejs.html).
 
+### Requirements
+
+- Node.js 18 or newer
+
 ### Installation
 
 #### Install with npm

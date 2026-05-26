@@ -1,8 +1,14 @@
 import axios, { AxiosBasicCredentials, AxiosInstance, AxiosRequestConfig } from "axios";
 import {
+  CreateBase32SecretKeyTotpDeviceParams,
+  CreateCustomTotpDeviceParams,
+  CreateOtpAuthUrlTotpDeviceParams,
+  CreateTotpDeviceParams,
   GetAttachmentResponse,
   ListNamespacesResponse,
   ListSmsNumbersResponse,
+  ListTotpDevicesParams,
+  ListTotpDevicesResponse,
   SearchInboxParams,
   SearchInboxResponse,
   SearchSmsMessagesParams,
@@ -10,6 +16,8 @@ import {
   SendVirtualEmailParams,
   SendVirtualSmsParams,
   SmtpSettings,
+  TotpDevice,
+  TotpOtpResponse,
 } from "./mailisk.interfaces";
 import nodemailer from "nodemailer";
 
@@ -38,7 +46,7 @@ export class MailiskClient {
   async searchSmsMessages(
     phoneNumber: string,
     params?: SearchSmsMessagesParams,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<SearchSmsMessagesResponse> {
     let _params: SearchSmsMessagesParams = { ...params };
 
@@ -92,6 +100,140 @@ export class MailiskClient {
 
   async sendVirtualSms(params: SendVirtualSmsParams): Promise<void> {
     return (await this.axiosInstance.post("api/sms/virtual", params)).data;
+  }
+
+  /**
+   * List saved TOTP devices.
+   *
+   * @example
+   * List saved TOTP devices for an issuer and username
+   * ```typescript
+   * const { items: devices } = await client.listTotpDevices({
+   *   issuer: "GitHub",
+   *   username: "qa@example.com",
+   * });
+   * ```
+   */
+  async listTotpDevices(params?: ListTotpDevicesParams): Promise<ListTotpDevicesResponse> {
+    const requestParams: ListTotpDevicesParams = {
+      ...params,
+      username: params?.username?.trim(),
+      issuer: params?.issuer?.trim(),
+    };
+
+    return (
+      await this.axiosInstance.get("api/devices", {
+        params: requestParams,
+      })
+    ).data;
+  }
+
+  /**
+   * Create a saved TOTP device from a Base32 shared secret using default TOTP settings.
+   *
+   * @example
+   * Create a saved TOTP device from a shared secret
+   * ```typescript
+   * const device = await client.createTotpDevice({
+   *   name: "GitHub staging",
+   *   sharedSecret: "JBSWY3DPEHPK3PXP",
+   * });
+   * ```
+   */
+  async createTotpDevice(params: CreateTotpDeviceParams): Promise<TotpDevice> {
+    return (await this.axiosInstance.post("api/devices", params)).data;
+  }
+
+  /**
+   * Create a saved TOTP device with custom settings.
+   *
+   * @example
+   * Create a saved TOTP device with custom settings
+   * ```typescript
+   * const device = await client.createCustomTotpDevice({
+   *   name: "GitHub staging",
+   *   secret: "JBSWY3DPEHPK3PXP",
+   *   username: "qa@example.com",
+   *   issuer: "GitHub",
+   *   digits: 6,
+   *   period: 30,
+   *   algorithm: "SHA1",
+   * });
+   * ```
+   */
+  async createCustomTotpDevice(params: CreateCustomTotpDeviceParams): Promise<TotpDevice> {
+    return (await this.axiosInstance.post("api/devices/custom", params)).data;
+  }
+
+  /**
+   * Create a saved TOTP device from a Base32 secret key.
+   *
+   * @example
+   * Create a saved TOTP device from a Base32 secret key
+   * ```typescript
+   * const device = await client.createTotpDeviceFromBase32SecretKey({
+   *   base32SecretKey: "JBSWY3DPEHPK3PXP",
+   *   username: "qa@example.com",
+   *   issuer: "GitHub",
+   * });
+   * ```
+   */
+  async createTotpDeviceFromBase32SecretKey(params: CreateBase32SecretKeyTotpDeviceParams): Promise<TotpDevice> {
+    return (await this.axiosInstance.post("api/devices/base32-secret-key", params)).data;
+  }
+
+  /**
+   * Create a saved TOTP device from an otpauth://totp URL.
+   *
+   * @example
+   * Create a saved TOTP device from an otpauth URL
+   * ```typescript
+   * const device = await client.createTotpDeviceFromOtpAuthUrl({
+   *   otpAuthUrl: "otpauth://totp/GitHub:qa@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub",
+   * });
+   * ```
+   */
+  async createTotpDeviceFromOtpAuthUrl(params: CreateOtpAuthUrlTotpDeviceParams): Promise<TotpDevice> {
+    return (await this.axiosInstance.post("api/devices/otpauth-url", params)).data;
+  }
+
+  /**
+   * Generate a TOTP code from a shared secret without saving a device.
+   *
+   * @example
+   * Generate a TOTP code from a shared secret
+   * ```typescript
+   * const { code } = await client.getTotpOtpBySharedSecret("JBSWY3DPEHPK3PXP");
+   * ```
+   */
+  async getTotpOtpBySharedSecret(sharedSecret: string): Promise<TotpOtpResponse> {
+    return (await this.axiosInstance.post("api/devices/otp", { sharedSecret })).data;
+  }
+
+  /**
+   * Generate a TOTP code for a saved device.
+   *
+   * @example
+   * Generate a TOTP code for a saved device
+   * ```typescript
+   * const { code } = await client.getTotpOtpByDeviceId(device.id);
+   * ```
+   */
+  async getTotpOtpByDeviceId(deviceId: string): Promise<TotpOtpResponse> {
+    return (await this.axiosInstance.get(`api/devices/${deviceId}/otp`)).data;
+  }
+
+  /**
+   * Delete a saved TOTP device.
+   *
+   * @example
+   * Delete a saved TOTP device
+   * ```typescript
+   * await client.deleteTotpDevice(device.id);
+   * ```
+   */
+  async deleteTotpDevice(deviceId: string): Promise<void> {
+    await this.axiosInstance.delete(`api/devices/${deviceId}`);
   }
 
   /**
@@ -180,7 +322,7 @@ export class MailiskClient {
   async searchInbox(
     namespace: string,
     params?: SearchInboxParams,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<SearchInboxResponse> {
     let _params = { ...params };
 

@@ -241,3 +241,112 @@ export interface SendVirtualSmsParams {
   /** The body of the SMS message */
   body: string;
 }
+
+export type TotpAlgorithm = "SHA1" | "SHA256" | "SHA512";
+
+export type KnownTotpDeviceSource = "shared_secret" | "custom" | "base32_secret_key" | "otpauth_url";
+
+export type TotpDeviceSource = KnownTotpDeviceSource | (string & {});
+
+export interface TotpDevice {
+  id: string;
+  organisation_id: string;
+  name: string;
+  username?: string | null;
+  issuer?: string | null;
+  digits: number;
+  period: number;
+  algorithm: TotpAlgorithm;
+  source: TotpDeviceSource;
+  expiresAt?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListTotpDevicesParams {
+  /** The maximum number of saved TOTP devices returned (1-100), used alongside `offset` for pagination. */
+  limit?: number;
+  /** The number of saved TOTP devices to skip/ignore, used alongside `limit` for pagination. Must be >= 0. */
+  offset?: number;
+  /** Case-insensitive partial username match. Trimmed before sending. */
+  username?: string;
+  /** Case-insensitive partial issuer match. Trimmed before sending. */
+  issuer?: string;
+}
+
+export interface ListTotpDevicesResponse {
+  total_count: number;
+  options: ListTotpDevicesParams;
+  items: TotpDevice[];
+}
+
+export interface CreateTotpDeviceParams {
+  /** Base32 shared secret. Uses default TOTP settings. */
+  sharedSecret: string;
+  /** Optional saved-device display name. Max 120 characters. */
+  name?: string;
+  /** Future ISO timestamp after which the saved device expires. */
+  expiresAt?: string;
+}
+
+export interface CreateCustomTotpDeviceParams {
+  /** Base32 shared secret. */
+  secret: string;
+  /** Optional saved-device display name. Max 120 characters. */
+  name?: string;
+  /** Account label. Max 240 characters. */
+  username?: string;
+  /** Issuer/app label. Max 240 characters. */
+  issuer?: string;
+  /** Number of OTP digits. */
+  digits?: 6 | 8;
+  /** OTP period in seconds. Must be an integer from 10 to 300. */
+  period?: number;
+  /** Hashing algorithm. */
+  algorithm?: TotpAlgorithm;
+  /** Future ISO timestamp after which the saved device expires. */
+  expiresAt?: string;
+}
+
+export interface CreateBase32SecretKeyTotpDeviceParams {
+  /** Base32 shared secret key. */
+  base32SecretKey: string;
+  /** Optional saved-device display name. Max 120 characters. */
+  name?: string;
+  /** Account label. Max 240 characters. */
+  username?: string;
+  /** Issuer/app label. Max 240 characters. */
+  issuer?: string;
+  /** Number of OTP digits. */
+  digits?: 6 | 8;
+  /** OTP period in seconds. Must be an integer from 10 to 300. */
+  period?: number;
+  /** Hashing algorithm. */
+  algorithm?: TotpAlgorithm;
+  /** Future ISO timestamp after which the saved device expires. */
+  expiresAt?: string;
+}
+
+export interface CreateOtpAuthUrlTotpDeviceParams {
+  /** otpauth://totp URL with a secret query parameter. */
+  otpAuthUrl: string;
+  /** Optional saved-device display name. Max 120 characters. */
+  name?: string;
+  /** Account label, used when missing from the URL label. Max 240 characters. */
+  username?: string;
+  /** Issuer/app label, used when missing from the URL. Max 240 characters. */
+  issuer?: string;
+  /** Number of OTP digits, used when missing from the URL. */
+  digits?: 6 | 8;
+  /** OTP period in seconds, used when missing from the URL. Must be an integer from 10 to 300. */
+  period?: number;
+  /** Hashing algorithm, used when missing from the URL. */
+  algorithm?: TotpAlgorithm;
+  /** Future ISO timestamp after which the saved device expires. */
+  expiresAt?: string;
+}
+
+export interface TotpOtpResponse {
+  code: string;
+  expires: string;
+}

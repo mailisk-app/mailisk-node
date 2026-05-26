@@ -11,6 +11,9 @@ import {
   mockAttachmentResponse,
   mockSmsMessagesResponse,
   mockSmsNumbersResponse,
+  mockTotpDevice,
+  mockTotpDevicesResponse,
+  mockTotpOtpResponse,
 } from "../mocks/axios-mocks";
 
 const setupMockAxios = () => {
@@ -278,6 +281,156 @@ describe("MailiskClient", () => {
       await expect(
         client.sendVirtualSms({ from_number: "+15551234567", to_number: "+15557654321", body: "Test message" })
       ).rejects.toThrow("Send SMS Error");
+    });
+  });
+
+  describe("listTotpDevices", () => {
+    it("should fetch and return saved TOTP devices", async () => {
+      const { mockGet } = setupMockAxios();
+      mockGet.mockResolvedValueOnce({ data: mockTotpDevicesResponse });
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.listTotpDevices({
+        limit: 20,
+        offset: 0,
+        username: " qa@example.com ",
+        issuer: " GitHub ",
+      });
+
+      expect(mockGet).toHaveBeenCalledWith("api/devices", {
+        params: {
+          limit: 20,
+          offset: 0,
+          username: "qa@example.com",
+          issuer: "GitHub",
+        },
+      });
+      expect(result).toEqual(mockTotpDevicesResponse);
+    });
+
+    it("should handle omitted saved TOTP device filters", async () => {
+      const { mockGet } = setupMockAxios();
+      mockGet.mockResolvedValueOnce({ data: mockTotpDevicesResponse });
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.listTotpDevices();
+
+      expect(mockGet).toHaveBeenCalledWith("api/devices", {
+        params: {
+          username: undefined,
+          issuer: undefined,
+        },
+      });
+      expect(result).toEqual(mockTotpDevicesResponse);
+    });
+  });
+
+  describe("createTotpDevice", () => {
+    it("should create a saved TOTP device from a shared secret", async () => {
+      const { mockPost } = setupMockAxios();
+      mockPost.mockResolvedValueOnce({ data: mockTotpDevice });
+
+      const params = {
+        sharedSecret: "JBSWY3DPEHPK3PXP",
+        name: "GitHub staging",
+        expiresAt: "2026-06-01T12:00:00.000Z",
+      };
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.createTotpDevice(params);
+
+      expect(mockPost).toHaveBeenCalledWith("api/devices", params);
+      expect(result).toEqual(mockTotpDevice);
+    });
+
+    it("should create a saved TOTP device with custom settings", async () => {
+      const { mockPost } = setupMockAxios();
+      mockPost.mockResolvedValueOnce({ data: mockTotpDevice });
+
+      const params = {
+        secret: "JBSWY3DPEHPK3PXP",
+        name: "GitHub staging",
+        username: "qa@example.com",
+        issuer: "GitHub",
+        digits: 6 as const,
+        period: 30,
+        algorithm: "SHA1" as const,
+      };
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.createCustomTotpDevice(params);
+
+      expect(mockPost).toHaveBeenCalledWith("api/devices/custom", params);
+      expect(result).toEqual(mockTotpDevice);
+    });
+
+    it("should create a saved TOTP device from a Base32 secret key", async () => {
+      const { mockPost } = setupMockAxios();
+      mockPost.mockResolvedValueOnce({ data: mockTotpDevice });
+
+      const params = {
+        base32SecretKey: "JBSWY3DPEHPK3PXP",
+        username: "qa@example.com",
+        issuer: "GitHub",
+      };
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.createTotpDeviceFromBase32SecretKey(params);
+
+      expect(mockPost).toHaveBeenCalledWith("api/devices/base32-secret-key", params);
+      expect(result).toEqual(mockTotpDevice);
+    });
+
+    it("should create a saved TOTP device from an otpauth URL", async () => {
+      const { mockPost } = setupMockAxios();
+      mockPost.mockResolvedValueOnce({ data: mockTotpDevice });
+
+      const params = {
+        otpAuthUrl: "otpauth://totp/GitHub:qa@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub",
+      };
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.createTotpDeviceFromOtpAuthUrl(params);
+
+      expect(mockPost).toHaveBeenCalledWith("api/devices/otpauth-url", params);
+      expect(result).toEqual(mockTotpDevice);
+    });
+  });
+
+  describe("TOTP OTP", () => {
+    it("should generate a TOTP code from a shared secret without saving", async () => {
+      const { mockPost } = setupMockAxios();
+      mockPost.mockResolvedValueOnce({ data: mockTotpOtpResponse });
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.getTotpOtpBySharedSecret("JBSWY3DPEHPK3PXP");
+
+      expect(mockPost).toHaveBeenCalledWith("api/devices/otp", { sharedSecret: "JBSWY3DPEHPK3PXP" });
+      expect(result).toEqual(mockTotpOtpResponse);
+    });
+
+    it("should generate a TOTP code for a saved device", async () => {
+      const { mockGet } = setupMockAxios();
+      mockGet.mockResolvedValueOnce({ data: mockTotpOtpResponse });
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.getTotpOtpByDeviceId("9b1f6ec0-b90d-4bd8-8dd0-f6b2d5138273");
+
+      expect(mockGet).toHaveBeenCalledWith("api/devices/9b1f6ec0-b90d-4bd8-8dd0-f6b2d5138273/otp");
+      expect(result).toEqual(mockTotpOtpResponse);
+    });
+  });
+
+  describe("deleteTotpDevice", () => {
+    it("should delete a saved TOTP device", async () => {
+      const { mockDelete } = setupMockAxios();
+      mockDelete.mockResolvedValueOnce({ data: undefined });
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.deleteTotpDevice("9b1f6ec0-b90d-4bd8-8dd0-f6b2d5138273");
+
+      expect(mockDelete).toHaveBeenCalledWith("api/devices/9b1f6ec0-b90d-4bd8-8dd0-f6b2d5138273");
+      expect(result).toBeUndefined();
     });
   });
 

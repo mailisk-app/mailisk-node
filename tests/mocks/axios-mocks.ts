@@ -106,3 +106,34 @@ export const mockSmsNumbersResponse = {
     },
   ],
 };
+
+export const mockTotpDevice = {
+  id: "9b1f6ec0-b90d-4bd8-8dd0-f6b2d5138273",
+  organisation_id: "7f0a9c32-66b2-4e25-a4cf-1f77db8f7f3b",
+  name: "GitHub staging",
+  username: "qa@example.com",
+  issuer: "GitHub",
+  digits: 6,
+  period: 30,
+  algorithm: "SHA1",
+  source: "custom",
+  expiresAt: null,
+  created_at: "2026-05-18T12:00:00.000Z",
+  updated_at: "2026-05-18T12:00:00.000Z",
+};
+
+export const mockTotpDevicesResponse = {
+  total_count: 1,
+  options: {
+    limit: 20,
+    offset: 0,
+    issuer: "GitHub",
+    username: "qa@example.com",
+  },
+  items: [mockTotpDevice],
+};
+
+export const mockTotpOtpResponse = {
+  code: "123456",
+  expires: "2026-05-18T12:00:30.000Z",
+};

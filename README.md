@@ -5,6 +5,7 @@ Mailisk is an end-to-end email and SMS testing platform. It allows you to receiv
 - Get a unique subdomain and unlimited email addresses for free.
 - Easily automate E2E password reset and account verification by catching emails.
 - Receive SMS messages and automate SMS tests.
+- Generate TOTP authenticator codes and manage saved TOTP devices.
 - Virtual SMTP and SMS support to test without 3rd party clients.
 
 ## Get started
@@ -213,4 +214,100 @@ await mailisk.sendVirtualSms({
   to_number: "15557654321",
   body: "Test message",
 });
+```
+
+## Client functions (TOTP)
+
+TOTP methods call the Mailisk API to generate codes and manage saved authenticator devices. The client does not generate TOTP codes locally.
+
+These endpoints require an organisation API key, prefixed with `sk_org_`.
+
+### `listTotpDevices(params?)`
+
+List active saved TOTP devices.
+
+```js
+const devices = await mailisk.listTotpDevices({
+  limit: 20,
+  offset: 0,
+  issuer: "GitHub",
+  username: "qa@example.com",
+});
+```
+
+### `createTotpDevice(params)`
+
+Create a saved TOTP device from a Base32 shared secret using default settings: 6 digits, 30 second period, and SHA1.
+
+```js
+const device = await mailisk.createTotpDevice({
+  name: "GitHub staging",
+  sharedSecret: "JBSWY3DPEHPK3PXP",
+  expiresAt: "2026-06-01T12:00:00.000Z",
+});
+```
+
+### `createCustomTotpDevice(params)`
+
+Create a saved TOTP device with custom settings.
+
+```js
+const device = await mailisk.createCustomTotpDevice({
+  name: "GitHub staging",
+  secret: "JBSWY3DPEHPK3PXP",
+  username: "qa@example.com",
+  issuer: "GitHub",
+  digits: 6,
+  period: 30,
+  algorithm: "SHA1",
+});
+```
+
+### `createTotpDeviceFromBase32SecretKey(params)`
+
+Create a saved TOTP device from a Base32 secret key.
+
+```js
+const device = await mailisk.createTotpDeviceFromBase32SecretKey({
+  base32SecretKey: "JBSWY3DPEHPK3PXP",
+  username: "qa@example.com",
+  issuer: "GitHub",
+});
+```
+
+### `createTotpDeviceFromOtpAuthUrl(params)`
+
+Create a saved TOTP device from an `otpauth://totp/...` URL.
+
+```js
+const device = await mailisk.createTotpDeviceFromOtpAuthUrl({
+  otpAuthUrl: "otpauth://totp/GitHub:qa@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub",
+});
+```
+
+### `getTotpOtpBySharedSecret(sharedSecret)`
+
+Generate a TOTP code from a shared secret without saving a device.
+
+```js
+const otp = await mailisk.getTotpOtpBySharedSecret("JBSWY3DPEHPK3PXP");
+
+console.log(otp.code);
+console.log(otp.expires);
+```
+
+### `getTotpOtpByDeviceId(deviceId)`
+
+Generate a TOTP code for a saved device.
+
+```js
+const otp = await mailisk.getTotpOtpByDeviceId(device.id);
+```
+
+### `deleteTotpDevice(deviceId)`
+
+Delete a saved TOTP device.
+
+```js
+await mailisk.deleteTotpDevice(device.id);
 ```

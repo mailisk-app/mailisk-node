@@ -331,9 +331,9 @@ describe("MailiskClient", () => {
       mockPost.mockResolvedValueOnce({ data: mockTotpDevice });
 
       const params = {
-        sharedSecret: "JBSWY3DPEHPK3PXP",
+        shared_secret: "JBSWY3DPEHPK3PXP",
         name: "GitHub staging",
-        expiresAt: "2026-06-01T12:00:00.000Z",
+        expires_at: "2026-06-01T12:00:00.000Z",
       };
 
       const client = new MailiskClient({ apiKey: "test-key" });
@@ -369,7 +369,7 @@ describe("MailiskClient", () => {
       mockPost.mockResolvedValueOnce({ data: mockTotpDevice });
 
       const params = {
-        base32SecretKey: "JBSWY3DPEHPK3PXP",
+        base32_secret_key: "JBSWY3DPEHPK3PXP",
         username: "qa@example.com",
         issuer: "GitHub",
       };
@@ -386,7 +386,7 @@ describe("MailiskClient", () => {
       mockPost.mockResolvedValueOnce({ data: mockTotpDevice });
 
       const params = {
-        otpAuthUrl: "otpauth://totp/GitHub:qa@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub",
+        otp_auth_url: "otpauth://totp/GitHub:qa@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub",
       };
 
       const client = new MailiskClient({ apiKey: "test-key" });
@@ -405,7 +405,23 @@ describe("MailiskClient", () => {
       const client = new MailiskClient({ apiKey: "test-key" });
       const result = await client.getTotpOtpBySharedSecret("JBSWY3DPEHPK3PXP");
 
-      expect(mockPost).toHaveBeenCalledWith("api/devices/otp", { sharedSecret: "JBSWY3DPEHPK3PXP" });
+      expect(mockPost).toHaveBeenCalledWith("api/devices/otp", { shared_secret: "JBSWY3DPEHPK3PXP" });
+      expect(result).toEqual(mockTotpOtpResponse);
+    });
+
+    it("should generate a TOTP code from a shared secret with minimum validity", async () => {
+      const { mockPost } = setupMockAxios();
+      mockPost.mockResolvedValueOnce({ data: mockTotpOtpResponse });
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.getTotpOtpBySharedSecret("JBSWY3DPEHPK3PXP", {
+        min_seconds_until_expire: 10,
+      });
+
+      expect(mockPost).toHaveBeenCalledWith("api/devices/otp", {
+        shared_secret: "JBSWY3DPEHPK3PXP",
+        min_seconds_until_expire: 10,
+      });
       expect(result).toEqual(mockTotpOtpResponse);
     });
 
@@ -417,6 +433,23 @@ describe("MailiskClient", () => {
       const result = await client.getTotpOtpByDeviceId("9b1f6ec0-b90d-4bd8-8dd0-f6b2d5138273");
 
       expect(mockGet).toHaveBeenCalledWith("api/devices/9b1f6ec0-b90d-4bd8-8dd0-f6b2d5138273/otp");
+      expect(result).toEqual(mockTotpOtpResponse);
+    });
+
+    it("should generate a TOTP code for a saved device with minimum validity", async () => {
+      const { mockGet } = setupMockAxios();
+      mockGet.mockResolvedValueOnce({ data: mockTotpOtpResponse });
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.getTotpOtpByDeviceId("9b1f6ec0-b90d-4bd8-8dd0-f6b2d5138273", {
+        min_seconds_until_expire: 10,
+      });
+
+      expect(mockGet).toHaveBeenCalledWith("api/devices/9b1f6ec0-b90d-4bd8-8dd0-f6b2d5138273/otp", {
+        params: {
+          min_seconds_until_expire: 10,
+        },
+      });
       expect(result).toEqual(mockTotpOtpResponse);
     });
   });

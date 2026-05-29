@@ -5,6 +5,7 @@ import {
   CreateOtpAuthUrlTotpDeviceParams,
   CreateTotpDeviceParams,
   GetAttachmentResponse,
+  GetTotpOtpParams,
   ListNamespacesResponse,
   ListSmsNumbersResponse,
   ListTotpDevicesParams,
@@ -136,7 +137,7 @@ export class MailiskClient {
    * ```typescript
    * const device = await client.createTotpDevice({
    *   name: "GitHub staging",
-   *   sharedSecret: "JBSWY3DPEHPK3PXP",
+   *   shared_secret: "JBSWY3DPEHPK3PXP",
    * });
    * ```
    */
@@ -172,7 +173,7 @@ export class MailiskClient {
    * Create a saved TOTP device from a Base32 secret key
    * ```typescript
    * const device = await client.createTotpDeviceFromBase32SecretKey({
-   *   base32SecretKey: "JBSWY3DPEHPK3PXP",
+   *   base32_secret_key: "JBSWY3DPEHPK3PXP",
    *   username: "qa@example.com",
    *   issuer: "GitHub",
    * });
@@ -189,7 +190,7 @@ export class MailiskClient {
    * Create a saved TOTP device from an otpauth URL
    * ```typescript
    * const device = await client.createTotpDeviceFromOtpAuthUrl({
-   *   otpAuthUrl: "otpauth://totp/GitHub:qa@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub",
+   *   otp_auth_url: "otpauth://totp/GitHub:qa@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub",
    * });
    * ```
    */
@@ -203,11 +204,13 @@ export class MailiskClient {
    * @example
    * Generate a TOTP code from a shared secret
    * ```typescript
-   * const { code } = await client.getTotpOtpBySharedSecret("JBSWY3DPEHPK3PXP");
+   * const { code } = await client.getTotpOtpBySharedSecret("JBSWY3DPEHPK3PXP", {
+   *   min_seconds_until_expire: 10,
+   * });
    * ```
    */
-  async getTotpOtpBySharedSecret(sharedSecret: string): Promise<TotpOtpResponse> {
-    return (await this.axiosInstance.post("api/devices/otp", { sharedSecret })).data;
+  async getTotpOtpBySharedSecret(sharedSecret: string, params?: GetTotpOtpParams): Promise<TotpOtpResponse> {
+    return (await this.axiosInstance.post("api/devices/otp", { shared_secret: sharedSecret, ...params })).data;
   }
 
   /**
@@ -216,11 +219,15 @@ export class MailiskClient {
    * @example
    * Generate a TOTP code for a saved device
    * ```typescript
-   * const { code } = await client.getTotpOtpByDeviceId(device.id);
+   * const { code } = await client.getTotpOtpByDeviceId(device.id, {
+   *   min_seconds_until_expire: 10,
+   * });
    * ```
    */
-  async getTotpOtpByDeviceId(deviceId: string): Promise<TotpOtpResponse> {
-    return (await this.axiosInstance.get(`api/devices/${deviceId}/otp`)).data;
+  async getTotpOtpByDeviceId(deviceId: string, params?: GetTotpOtpParams): Promise<TotpOtpResponse> {
+    const url = `api/devices/${deviceId}/otp`;
+
+    return params ? (await this.axiosInstance.get(url, { params })).data : (await this.axiosInstance.get(url)).data;
   }
 
   /**

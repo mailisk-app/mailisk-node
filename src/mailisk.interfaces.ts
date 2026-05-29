@@ -258,7 +258,7 @@ export interface TotpDevice {
   period: number;
   algorithm: TotpAlgorithm;
   source: TotpDeviceSource;
-  expiresAt?: string | null;
+  expires_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -282,11 +282,11 @@ export interface ListTotpDevicesResponse {
 
 export interface CreateTotpDeviceParams {
   /** Base32 shared secret. Uses default TOTP settings. */
-  sharedSecret: string;
+  shared_secret: string;
   /** Optional saved-device display name. Max 120 characters. */
   name?: string;
   /** Future ISO timestamp after which the saved device expires. */
-  expiresAt?: string;
+  expires_at?: string;
 }
 
 export interface CreateCustomTotpDeviceParams {
@@ -305,12 +305,12 @@ export interface CreateCustomTotpDeviceParams {
   /** Hashing algorithm. */
   algorithm?: TotpAlgorithm;
   /** Future ISO timestamp after which the saved device expires. */
-  expiresAt?: string;
+  expires_at?: string;
 }
 
 export interface CreateBase32SecretKeyTotpDeviceParams {
   /** Base32 shared secret key. */
-  base32SecretKey: string;
+  base32_secret_key: string;
   /** Optional saved-device display name. Max 120 characters. */
   name?: string;
   /** Account label. Max 240 characters. */
@@ -324,12 +324,12 @@ export interface CreateBase32SecretKeyTotpDeviceParams {
   /** Hashing algorithm. */
   algorithm?: TotpAlgorithm;
   /** Future ISO timestamp after which the saved device expires. */
-  expiresAt?: string;
+  expires_at?: string;
 }
 
 export interface CreateOtpAuthUrlTotpDeviceParams {
   /** otpauth://totp URL with a secret query parameter. */
-  otpAuthUrl: string;
+  otp_auth_url: string;
   /** Optional saved-device display name. Max 120 characters. */
   name?: string;
   /** Account label, used when missing from the URL label. Max 240 characters. */
@@ -343,7 +343,12 @@ export interface CreateOtpAuthUrlTotpDeviceParams {
   /** Hashing algorithm, used when missing from the URL. */
   algorithm?: TotpAlgorithm;
   /** Future ISO timestamp after which the saved device expires. */
-  expiresAt?: string;
+  expires_at?: string;
+}
+
+export interface GetTotpOtpParams {
+  /** Minimum number of seconds the returned OTP should remain valid. Must be >= 0 and less than the TOTP period. */
+  min_seconds_until_expire?: number;
 }
 
 export interface TotpOtpResponse {

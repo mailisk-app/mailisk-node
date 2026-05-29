@@ -242,8 +242,8 @@ Create a saved TOTP device from a Base32 shared secret using default settings: 6
 ```js
 const device = await mailisk.createTotpDevice({
   name: "GitHub staging",
-  sharedSecret: "JBSWY3DPEHPK3PXP",
-  expiresAt: "2026-06-01T12:00:00.000Z",
+  shared_secret: "JBSWY3DPEHPK3PXP",
+  expires_at: "2026-06-01T12:00:00.000Z",
 });
 ```
 
@@ -269,7 +269,7 @@ Create a saved TOTP device from a Base32 secret key.
 
 ```js
 const device = await mailisk.createTotpDeviceFromBase32SecretKey({
-  base32SecretKey: "JBSWY3DPEHPK3PXP",
+  base32_secret_key: "JBSWY3DPEHPK3PXP",
   username: "qa@example.com",
   issuer: "GitHub",
 });
@@ -281,27 +281,33 @@ Create a saved TOTP device from an `otpauth://totp/...` URL.
 
 ```js
 const device = await mailisk.createTotpDeviceFromOtpAuthUrl({
-  otpAuthUrl: "otpauth://totp/GitHub:qa@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub",
+  otp_auth_url: "otpauth://totp/GitHub:qa@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub",
 });
 ```
 
-### `getTotpOtpBySharedSecret(sharedSecret)`
+### `getTotpOtpBySharedSecret(sharedSecret, params?)`
 
 Generate a TOTP code from a shared secret without saving a device.
+Pass `min_seconds_until_expire` to wait for the next TOTP period when the current code has fewer seconds left.
 
 ```js
-const otp = await mailisk.getTotpOtpBySharedSecret("JBSWY3DPEHPK3PXP");
+const otp = await mailisk.getTotpOtpBySharedSecret("JBSWY3DPEHPK3PXP", {
+  min_seconds_until_expire: 10,
+});
 
 console.log(otp.code);
 console.log(otp.expires);
 ```
 
-### `getTotpOtpByDeviceId(deviceId)`
+### `getTotpOtpByDeviceId(deviceId, params?)`
 
 Generate a TOTP code for a saved device.
+Pass `min_seconds_until_expire` to wait for the next TOTP period when the current code has fewer seconds left.
 
 ```js
-const otp = await mailisk.getTotpOtpByDeviceId(device.id);
+const otp = await mailisk.getTotpOtpByDeviceId(device.id, {
+  min_seconds_until_expire: 10,
+});
 ```
 
 ### `deleteTotpDevice(deviceId)`

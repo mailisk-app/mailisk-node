@@ -6,11 +6,47 @@ Mailisk is an end-to-end email and SMS testing platform. It allows you to receiv
 - Easily automate E2E password reset and account verification by catching emails.
 - Receive SMS messages and automate SMS tests.
 - Generate TOTP authenticator codes and manage saved TOTP devices.
-- Virtual SMTP and SMS support to test without 3rd party clients.
+- Outbound email and virtual SMS support to test without 3rd party clients.
 
 ## Get started
 
 For a more step-by-step walkthrough see the [NodeJS Guide](https://docs.mailisk.com/guides/nodejs.html).
+
+- [Mailisk Node Client](#mailisk-node-client)
+  - [Get started](#get-started)
+    - [Requirements](#requirements)
+    - [Installation](#installation)
+      - [Install with npm](#install-with-npm)
+      - [Install with Yarn](#install-with-yarn)
+    - [Usage](#usage)
+    - [API Reference](#api-reference)
+  - [Client functions (Email)](#client-functions-email)
+    - [`searchInbox(namespace, params?, requestOptions?)`](#searchinboxnamespace-params-requestoptions)
+      - [Quick examples](#quick-examples)
+      - [Filter by destination address](#filter-by-destination-address)
+    - [`listNamespaces()`](#listnamespaces)
+    - [`getAttachment(attachmentId)`](#getattachmentattachmentid)
+    - [`downloadAttachment(attachmentId)`](#downloadattachmentattachmentid)
+      - [Quick examples](#quick-examples-1)
+  - [Client functions (Outbound Email)](#client-functions-outbound-email)
+    - [`sendEmail(namespace, params)`](#sendemailnamespace-params)
+    - [`getOutboundEmail(outboundEmailId)`](#getoutboundemailoutboundemailid)
+    - [`replyToEmail(emailId, params)`](#replytoemailemailid-params)
+    - [`forwardEmail(emailId, params)`](#forwardemailemailid-params)
+  - [Client functions (SMS)](#client-functions-sms)
+    - [`searchSmsMessages(phoneNumber, params?, requestOptions?)`](#searchsmsmessagesphonenumber-params-requestoptions)
+      - [Quick examples](#quick-examples-2)
+    - [`listSmsNumbers()`](#listsmsnumbers)
+    - [`sendVirtualSms(params)`](#sendvirtualsmsparams)
+  - [Client functions (TOTP)](#client-functions-totp)
+    - [`listTotpDevices(params?)`](#listtotpdevicesparams)
+    - [`createTotpDevice(params)`](#createtotpdeviceparams)
+    - [`createCustomTotpDevice(params)`](#createcustomtotpdeviceparams)
+    - [`createTotpDeviceFromBase32SecretKey(params)`](#createtotpdevicefrombase32secretkeyparams)
+    - [`createTotpDeviceFromOtpAuthUrl(params)`](#createtotpdevicefromotpauthurlparams)
+    - [`getTotpOtpBySharedSecret(sharedSecret, params?)`](#gettotpotpbysharedsecretsharedsecret-params)
+    - [`getTotpOtpByDeviceId(deviceId, params?)`](#gettotpotpbydeviceiddeviceid-params)
+    - [`deleteTotpDevice(deviceId)`](#deletetotpdevicedeviceid)
 
 ### Requirements
 
@@ -40,10 +76,9 @@ const { MailiskClient } = require("mailisk");
 // create client
 const mailisk = new MailiskClient({ apiKey: "YOUR_API_KEY" });
 
-// send email (using virtual SMTP)
-await mailisk.sendVirtualEmail(namespace, {
-  from: "test@example.com",
-  to: `john@${namespace}.mailisk.net`,
+// send outbound email
+await mailisk.sendEmail(namespace, {
+  to: ["verified@example.com"],
   subject: "Testing",
   text: "This is a test.",
 });
@@ -93,21 +128,6 @@ Pass `to_addr_prefix` so you don’t pick up stale messages:
 ```js
 const { data: emails } = await mailisk.searchInbox(namespace, {
   to_addr_prefix: `john@${namespace}.mailisk.net`,
-});
-```
-
-### sendVirtualEmail(namespace, params)
-
-Send an email using [Virtual SMTP](https://docs.mailisk.com/smtp.html). This will fetch the SMTP settings for the selected namespace and send an email. These emails can only be sent to an address that ends in `@{namespace}.mailisk.net`.
-
-```js
-const namespace = "mynamespace";
-
-await mailisk.sendVirtualEmail(namespace, {
-  from: "test@example.com",
-  to: `john@${namespace}.mailisk.net`,
-  subject: "This is a test",
-  text: "Testing",
 });
 ```
 
@@ -163,6 +183,89 @@ const fileStream = fs.createWriteStream(filename);
 await new Promise((ok, err) => res.body.pipe(fileStream).on("finish", ok).on("error", err));
 ```
 
+## Client functions (Outbound Email)
+
+Outbound email methods call the Mailisk API to create, queue, and inspect email delivery.
+
+### `sendEmail(namespace, params)`
+
+Create and queue a new outbound email from a namespace. Recipients must be verified external destinations or addresses under the same namespace. Messages sent only to the same namespace do not consume outbound usage because they are counted as inbound email when delivered.
+
+```js
+const outboundEmail = await mailisk.sendEmail("mynamespace", {
+  from: {
+    email: "support@mynamespace.mailisk.net",
+    name: "Support",
+  },
+  to: ["verified@example.com"],
+  subject: "Hello from Mailisk",
+  text: "This is the plain text body.",
+  html: "<p>This is the HTML body.</p>",
+});
+
+console.log(outboundEmail.id, outboundEmail.status);
+```
+
+Attachments use base64 encoded content:
+
+```js
+const fs = require("node:fs");
+const attachmentContent = fs.readFileSync("report.txt");
+
+await mailisk.sendEmail("mynamespace", {
+  to: ["verified@example.com"],
+  subject: "Report",
+  text: "Attached.",
+  attachments: [
+    {
+      filename: "report.txt",
+      content_type: "application/octet-stream",
+      content_base64: attachmentContent.toString("base64"),
+    },
+  ],
+});
+```
+
+### `getOutboundEmail(outboundEmailId)`
+
+Fetch the current delivery state for an outbound email, including recipient delivery statuses and provider events.
+
+```js
+const outboundEmail = await mailisk.getOutboundEmail(outboundEmailId);
+
+console.log(outboundEmail.delivery_summary.delivered);
+console.log(outboundEmail.recipients);
+```
+
+### `replyToEmail(emailId, params)`
+
+Create and queue a reply to an inbound email returned by `searchInbox`. Mailisk derives the reply recipient and threading headers from the source email.
+
+```js
+const { data: emails } = await mailisk.searchInbox("mynamespace", {
+  to_addr_prefix: "support@mynamespace.mailisk.net",
+});
+
+const reply = await mailisk.replyToEmail(emails[0].id, {
+  text: "Thanks, we received your message.",
+});
+
+console.log(reply.id);
+```
+
+### `forwardEmail(emailId, params)`
+
+Create and queue a forwarded copy of an inbound email.
+
+```js
+const forwarded = await mailisk.forwardEmail(emailId, {
+  to: ["verified@example.com"],
+  text: "Forwarding this along.",
+});
+
+console.log(forwarded.id);
+```
+
 ## Client functions (SMS)
 
 ### `searchSmsMessages(phoneNumber, params?, requestOptions?)`
@@ -192,7 +295,7 @@ await mailisk.searchSmsMessages(phoneNumber, {
 await mailisk.searchSmsMessages(
   phoneNumber,
   { wait: false, limit: 10, from_date: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-  { timeout: 10_000 }
+  { timeout: 10_000 },
 );
 ```
 
@@ -219,8 +322,6 @@ await mailisk.sendVirtualSms({
 ## Client functions (TOTP)
 
 TOTP methods call the Mailisk API to generate codes and manage saved authenticator devices. The client does not generate TOTP codes locally.
-
-These endpoints require an organisation API key, prefixed with `sk_org_`.
 
 ### `listTotpDevices(params?)`
 

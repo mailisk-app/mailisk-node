@@ -10,10 +10,15 @@ import {
   ListSmsNumbersResponse,
   ListTotpDevicesParams,
   ListTotpDevicesResponse,
+  ForwardEmailParams,
+  OutboundEmailDetailResponse,
+  OutboundEmailResponse,
+  ReplyToEmailParams,
   SearchInboxParams,
   SearchInboxResponse,
   SearchSmsMessagesParams,
   SearchSmsMessagesResponse,
+  SendEmailParams,
   SendVirtualEmailParams,
   SendVirtualSmsParams,
   SmtpSettings,
@@ -101,6 +106,48 @@ export class MailiskClient {
 
   async sendVirtualSms(params: SendVirtualSmsParams): Promise<void> {
     return (await this.axiosInstance.post("api/sms/virtual", params)).data;
+  }
+
+  /**
+   * Create and queue a new outbound email from a namespace.
+   *
+   * @example
+   * Send an outbound email
+   * ```typescript
+   * const email = await client.sendEmail("mynamespace", {
+   *   to: ["verified@example.com"],
+   *   subject: "Hello",
+   *   text: "Hello from Mailisk",
+   * });
+   * ```
+   */
+  async sendEmail(namespace: string, params: SendEmailParams): Promise<OutboundEmailResponse> {
+    return (
+      await this.axiosInstance.post("api/emails/send", params, {
+        params: { namespace },
+      })
+    ).data;
+  }
+
+  /**
+   * Get current delivery state for an outbound email.
+   */
+  async getOutboundEmail(outboundEmailId: string): Promise<OutboundEmailDetailResponse> {
+    return (await this.axiosInstance.get(`api/emails/outbound/${outboundEmailId}`)).data;
+  }
+
+  /**
+   * Create and queue a reply to an inbound email.
+   */
+  async replyToEmail(emailId: string, params: ReplyToEmailParams): Promise<OutboundEmailResponse> {
+    return (await this.axiosInstance.post(`api/emails/${emailId}/reply`, params)).data;
+  }
+
+  /**
+   * Create and queue a forwarded copy of an inbound email.
+   */
+  async forwardEmail(emailId: string, params: ForwardEmailParams): Promise<OutboundEmailResponse> {
+    return (await this.axiosInstance.post(`api/emails/${emailId}/forward`, params)).data;
   }
 
   /**
@@ -255,6 +302,8 @@ export class MailiskClient {
    *
    * These emails can only be sent to valid Mailisk namespaces, i.e. emails that end in @mynamespace.mailisk.net
    *
+   * @deprecated Use sendEmail(namespace, params) for outbound email. This method remains available for existing Virtual SMTP tests.
+   *
    * @example
    * For example, sending a test email:
    * ```typescript
@@ -364,6 +413,8 @@ export class MailiskClient {
 
   /**
    * Get the SMTP settings for a namespace.
+   *
+   * @deprecated Virtual SMTP is deprecated. Use sendEmail(namespace, params) for outbound email instead.
    */
   async getSmtpSettings(namespace: string): Promise<SmtpSettings> {
     const result = await this.axiosInstance.get(`api/smtp/${namespace}`);

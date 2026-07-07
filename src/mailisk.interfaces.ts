@@ -242,6 +242,227 @@ export interface SendVirtualSmsParams {
   body: string;
 }
 
+export type OutboundEmailType = "new" | "reply" | "forward";
+
+export type OutboundEmailStatus = "queued" | "sending" | "sent" | "failed";
+
+export type OutboundEmailRecipientType = "to" | "cc" | "bcc";
+
+export type OutboundEmailRecipientDeliveryStatus =
+  | "pending"
+  | "accepted"
+  | "queued"
+  | "sent"
+  | "delayed"
+  | "deferred"
+  | "delivered"
+  | "bounced"
+  | "expired"
+  | "complained"
+  | "unsubscribed"
+  | "suppressed"
+  | "rejected"
+  | "failed"
+  | "cancelled";
+
+export type OutboundEmailEventType =
+  | "accepted"
+  | "queued"
+  | "sent"
+  | "failed"
+  | "rejected"
+  | "delayed"
+  | "deferred"
+  | "delivered"
+  | "bounced"
+  | "expired"
+  | "complained"
+  | "unsubscribed"
+  | "suppressed"
+  | "cancelled"
+  | "opened"
+  | "clicked";
+
+export type OutboundEmailAttachmentDisposition = "attachment" | "inline";
+
+export interface OutboundEmailAddress {
+  /** Email address */
+  email: string;
+  /** Display name, if one is specified */
+  name?: string;
+}
+
+export interface OutboundEmailAttachment {
+  /** Filename of the attachment */
+  filename: string;
+  /** MIME content type */
+  content_type: string;
+  /** Base64 encoded attachment content */
+  content_base64: string;
+  /** Content-ID for inline attachments */
+  content_id?: string;
+  /** Attachment disposition */
+  disposition?: OutboundEmailAttachmentDisposition;
+}
+
+export interface SendEmailParams {
+  /** Optional sender override. Must belong to the requested namespace. */
+  from?: OutboundEmailAddress;
+  /** Optional Reply-To address */
+  reply_to?: OutboundEmailAddress;
+  /** Primary recipients */
+  to?: string[];
+  /** Carbon-copied recipients */
+  cc?: string[];
+  /** Blind carbon-copied recipients */
+  bcc?: string[];
+  /** Email subject */
+  subject: string;
+  /** HTML message body */
+  html?: string;
+  /** Plain text message body */
+  text?: string;
+  /** Attachments to include */
+  attachments?: OutboundEmailAttachment[];
+}
+
+export interface ReplyToEmailParams {
+  /** Optional sender override. Must belong to the source email namespace. */
+  from?: OutboundEmailAddress;
+  /** Carbon-copied recipients */
+  cc?: string[];
+  /** Blind carbon-copied recipients */
+  bcc?: string[];
+  /** Optional subject. Defaults to Re: original subject. */
+  subject?: string;
+  /** HTML reply body */
+  html?: string;
+  /** Plain text reply body */
+  text?: string;
+  /** Attachments to include */
+  attachments?: OutboundEmailAttachment[];
+}
+
+export interface ForwardEmailParams {
+  /** Optional sender override. Must belong to the source email namespace. */
+  from?: OutboundEmailAddress;
+  /** Primary recipients */
+  to: string[];
+  /** Carbon-copied recipients */
+  cc?: string[];
+  /** Blind carbon-copied recipients */
+  bcc?: string[];
+  /** Optional subject. Defaults to Fwd: original subject. */
+  subject?: string;
+  /** Optional HTML body to prepend before the forwarded message */
+  html?: string;
+  /** Optional plain text body to prepend before the forwarded message */
+  text?: string;
+}
+
+export interface OutboundEmailResponse {
+  id: string;
+  organisation_id: string;
+  type: OutboundEmailType;
+  status: OutboundEmailStatus;
+  from: OutboundEmailAddress;
+  reply_to?: OutboundEmailAddress;
+  subject: string;
+  recipient_count: number;
+  attachment_count: number;
+  message_id: string;
+  provider?: string;
+  provider_message_id?: string;
+  failure_reason?: string;
+  queued_at: string;
+  sending_at?: string;
+  sent_at?: string;
+  failed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OutboundEmailDeliverySummary {
+  pending: number;
+  accepted: number;
+  queued: number;
+  sent: number;
+  delayed: number;
+  deferred: number;
+  delivered: number;
+  bounced: number;
+  expired: number;
+  complained: number;
+  unsubscribed: number;
+  suppressed: number;
+  rejected: number;
+  failed: number;
+  cancelled: number;
+}
+
+export interface OutboundEmailRecipient {
+  id: string;
+  type: OutboundEmailRecipientType;
+  email: string;
+  name?: string;
+  delivery_status: OutboundEmailRecipientDeliveryStatus;
+  last_event_type?: string;
+  last_event_at?: string;
+  accepted_at?: string;
+  queued_at?: string;
+  sent_at?: string;
+  delayed_at?: string;
+  deferred_at?: string;
+  delivered_at?: string;
+  bounced_at?: string;
+  expired_at?: string;
+  complained_at?: string;
+  unsubscribed_at?: string;
+  suppressed_at?: string;
+  rejected_at?: string;
+  failed_at?: string;
+  cancelled_at?: string;
+  last_smtp_code?: string;
+  last_enhanced_status_code?: string;
+  last_smtp_response?: string;
+  attempt_count: number;
+  bounce_type?: string;
+  bounce_subtype?: string;
+  bounce_classification?: string;
+  complaint_feedback_type?: string;
+}
+
+export interface OutboundEmailEventRecipient {
+  id: string;
+  outbound_email_recipient_id?: string;
+  email: string;
+  smtp_code?: string;
+  enhanced_status_code?: string;
+  smtp_response?: string;
+  diagnostic_code?: string;
+  action?: string;
+  attempt_count?: number;
+  bounce_classification?: string;
+}
+
+export interface OutboundEmailEvent {
+  id: string;
+  provider: string;
+  provider_message_id?: string;
+  provider_event_id?: string;
+  event_type: OutboundEmailEventType;
+  event_subtype?: string;
+  occurred_at: string;
+  recipients: OutboundEmailEventRecipient[];
+  created_at: string;
+}
+
+export interface OutboundEmailDetailResponse extends OutboundEmailResponse {
+  delivery_summary: OutboundEmailDeliverySummary;
+  recipients: OutboundEmailRecipient[];
+  events: OutboundEmailEvent[];
+}
+
 export type TotpAlgorithm = "SHA1" | "SHA256" | "SHA512";
 
 export type KnownTotpDeviceSource = "shared_secret" | "custom" | "base32_secret_key" | "otpauth_url";

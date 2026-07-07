@@ -107,6 +107,54 @@ export const mockSmsNumbersResponse = {
   ],
 };
 
+export const mockOutboundEmailResponse = {
+  id: "2d1d9e75-4bc8-49a4-b618-f9b6af78cc4f",
+  organisation_id: "7f0a9c32-66b2-4e25-a4cf-1f77db8f7f3b",
+  type: "new",
+  status: "queued",
+  from: {
+    email: "outbound-delivery@test-namespace.mailisk.net",
+  },
+  subject: "Hello",
+  recipient_count: 1,
+  attachment_count: 0,
+  message_id: "<2d1d9e75-4bc8-49a4-b618-f9b6af78cc4f@test-namespace.mailisk.net>",
+  queued_at: "2026-06-01T12:00:00.000Z",
+  created_at: "2026-06-01T12:00:00.000Z",
+  updated_at: "2026-06-01T12:00:00.000Z",
+};
+
+export const mockOutboundEmailDetailResponse = {
+  ...mockOutboundEmailResponse,
+  delivery_summary: {
+    pending: 1,
+    accepted: 0,
+    queued: 0,
+    sent: 0,
+    delayed: 0,
+    deferred: 0,
+    delivered: 0,
+    bounced: 0,
+    expired: 0,
+    complained: 0,
+    unsubscribed: 0,
+    suppressed: 0,
+    rejected: 0,
+    failed: 0,
+    cancelled: 0,
+  },
+  recipients: [
+    {
+      id: "2a30af1d-3348-4232-9958-20bf446ad793",
+      type: "to",
+      email: "verified@example.com",
+      delivery_status: "pending",
+      attempt_count: 0,
+    },
+  ],
+  events: [],
+};
+
 export const mockTotpDevice = {
   id: "9b1f6ec0-b90d-4bd8-8dd0-f6b2d5138273",
   organisation_id: "7f0a9c32-66b2-4e25-a4cf-1f77db8f7f3b",

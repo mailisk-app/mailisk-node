@@ -11,6 +11,8 @@ import {
   mockAttachmentResponse,
   mockSmsMessagesResponse,
   mockSmsNumbersResponse,
+  mockOutboundEmailDetailResponse,
+  mockOutboundEmailResponse,
   mockTotpDevice,
   mockTotpDevicesResponse,
   mockTotpOtpResponse,
@@ -281,6 +283,97 @@ describe("MailiskClient", () => {
       await expect(
         client.sendVirtualSms({ from_number: "+15551234567", to_number: "+15557654321", body: "Test message" })
       ).rejects.toThrow("Send SMS Error");
+    });
+  });
+
+  describe("outbound email", () => {
+    it("should send an outbound email through the API", async () => {
+      const { mockPost } = setupMockAxios();
+      mockPost.mockResolvedValueOnce({ data: mockOutboundEmailResponse });
+
+      const emailParams = {
+        from: {
+          email: "support@test-namespace.mailisk.net",
+          name: "Support",
+        },
+        reply_to: {
+          email: "team@test-namespace.mailisk.net",
+          name: "Team",
+        },
+        to: ["verified@example.com"],
+        subject: "Hello",
+        text: "Hello from Mailisk",
+        html: "<p>Hello from Mailisk</p>",
+        attachments: [
+          {
+            filename: "hello.txt",
+            content_type: "text/plain",
+            content_base64: Buffer.from("hello").toString("base64"),
+            disposition: "attachment" as const,
+          },
+        ],
+      };
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.sendEmail("test-namespace", emailParams);
+
+      expect(mockPost).toHaveBeenCalledWith("api/emails/send", emailParams, {
+        params: {
+          namespace: "test-namespace",
+        },
+      });
+      expect(result).toEqual(mockOutboundEmailResponse);
+    });
+
+    it("should get outbound email delivery details", async () => {
+      const { mockGet } = setupMockAxios();
+      mockGet.mockResolvedValueOnce({ data: mockOutboundEmailDetailResponse });
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.getOutboundEmail("outbound-email-id");
+
+      expect(mockGet).toHaveBeenCalledWith("api/emails/outbound/outbound-email-id");
+      expect(result).toEqual(mockOutboundEmailDetailResponse);
+    });
+
+    it("should reply to an inbound email through the API", async () => {
+      const { mockPost } = setupMockAxios();
+      mockPost.mockResolvedValueOnce({ data: mockOutboundEmailResponse });
+
+      const replyParams = {
+        from: {
+          email: "support@test-namespace.mailisk.net",
+        },
+        cc: ["manager@example.com"],
+        subject: "Re: Hello",
+        text: "Thanks for the message.",
+      };
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.replyToEmail("inbound-email-id", replyParams);
+
+      expect(mockPost).toHaveBeenCalledWith("api/emails/inbound-email-id/reply", replyParams);
+      expect(result).toEqual(mockOutboundEmailResponse);
+    });
+
+    it("should forward an inbound email through the API", async () => {
+      const { mockPost } = setupMockAxios();
+      mockPost.mockResolvedValueOnce({ data: mockOutboundEmailResponse });
+
+      const forwardParams = {
+        from: {
+          email: "support@test-namespace.mailisk.net",
+        },
+        to: ["verified@example.com"],
+        subject: "Fwd: Hello",
+        text: "Forwarding this along.",
+      };
+
+      const client = new MailiskClient({ apiKey: "test-key" });
+      const result = await client.forwardEmail("inbound-email-id", forwardParams);
+
+      expect(mockPost).toHaveBeenCalledWith("api/emails/inbound-email-id/forward", forwardParams);
+      expect(result).toEqual(mockOutboundEmailResponse);
     });
   });
 

@@ -1,6 +1,6 @@
 {
   "name": "mailisk",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Mailisk library for NodeJS",
   "keywords": [
     "mailisk",
@@ -33,6 +33,6 @@
   },
   "dependencies": {
     "axios": "^1.15.2",
-    "nodemailer": "^8.0.4"
+    "nodemailer": "^9.0.3"
   }
 }

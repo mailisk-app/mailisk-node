@@ -1,4 +1,4 @@
-import axios, { AxiosBasicCredentials, AxiosInstance, AxiosRequestConfig } from "axios";
+import axios, { AxiosBasicCredentials, AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import {
   CreateBase32SecretKeyTotpDeviceParams,
   CreateCustomTotpDeviceParams,
@@ -84,7 +84,7 @@ export class MailiskClient {
     };
 
     return (
-      await this.axiosInstance.get(`api/sms/${phoneNumber}/messages`, {
+      await this.axiosInstance.get<SearchSmsMessagesResponse, AxiosResponse<SearchSmsMessagesResponse>, any>(`api/sms/${phoneNumber}/messages`, {
         ..._config,
         params: requestParams,
       })
